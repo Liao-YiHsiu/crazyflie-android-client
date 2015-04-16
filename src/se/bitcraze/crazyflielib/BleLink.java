@@ -211,7 +211,7 @@ public class BleLink extends AbstractLink {
 
 	int ctr = 0;
 	@Override
-	public void send(CrtpPacket packet) {
+	public synchronized void send(CrtpPacket packet) {
 		
 		// FIXME: Skipping half of the commander packets to avoid queuing up packets on slow BLE
 		if ((mWriteWithAnswer == false) && ((ctr++)%2 == 0))
@@ -229,6 +229,12 @@ public class BleLink extends AbstractLink {
 						mCrtpChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
 						mWritten = true;
 					}
+                    byte[] tmp = pk.toByteArray();
+
+                    System.out.print("Send Data ");
+                    for(int i = 0; i < tmp.length; ++i)
+                        System.out.print((0+tmp[i]) +" ");
+                    System.out.println();
 					mCrtpChar.setValue(pk.toByteArray());
 					mGatt.writeCharacteristic(mCrtpChar);
 				}

@@ -41,6 +41,7 @@ import se.bitcraze.crazyflielib.ConnectionAdapter;
 import se.bitcraze.crazyflielib.CrazyradioLink;
 import se.bitcraze.crazyflielib.Link;
 import se.bitcraze.crazyflielib.crtp.CommanderPacket;
+import se.bitcraze.crazyflielib.crtp.LogPacket;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -89,6 +90,7 @@ public class MainActivity extends Activity {
     private boolean mDoubleBackToExitPressedOnce = false;
 
     private Thread mSendJoystickDataThread;
+    private Thread mSendLogDataThread;
 
     private Controls mControls;
 
@@ -396,7 +398,7 @@ public class MainActivity extends Activity {
             } catch (IllegalArgumentException e) {
                 if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) &&
                     getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)){
-                    if (mPreferences.getBoolean(PreferencesActivity.KEY_PREF_BLATENCY_BOOL, false)) {
+                    if (true || mPreferences.getBoolean(PreferencesActivity.KEY_PREF_BLATENCY_BOOL, false)) {
                         Log.d(LOG_TAG, "Using bluetooth write with response");
                         mLink = new BleLink(this, true);
                     } else {
@@ -487,8 +489,8 @@ public class MainActivity extends Activity {
                 @Override
                 public void run() {
                     while (mLink != null) {
-                        mLink.send(new CommanderPacket(mController.getRoll(), mController.getPitch(), mController.getYaw(), (char) (mController.getThrustAbsolute()), mControls.isXmode()));
-
+                        //mLink.send(new CommanderPacket(mController.getRoll(), mController.getPitch(), mController.getYaw(), (char) (mController.getThrustAbsolute()), mControls.isXmode()));
+                        mLink.send(new CommanderPacket(0, mController.getPitch()/10, 5*mController.getThrust(), (char) (mController.getThrustAbsolute()), mControls.isXmode()));
                         try {
                             Thread.sleep(20, 0);
                         } catch (InterruptedException e) {
@@ -498,6 +500,23 @@ public class MainActivity extends Activity {
                 }
             });
             mSendJoystickDataThread.start();
+
+            mSendLogDataThread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    for (int i = 0; i < 100; i++) {
+                        mLink.send(new LogPacket((byte) i));
+
+                        try {
+                            Thread.sleep(200, 0);
+                        } catch (InterruptedException e) {
+                            break;
+                        }
+                    }
+                }
+            });
+            //mSendLogDataThread.start();
+
         } catch (IllegalArgumentException e) {
             Log.d(LOG_TAG, e.getMessage());
             Toast.makeText(this, "Cannot connect: Crazyradio not attached and Bluetooth LE not available", Toast.LENGTH_SHORT).show();
